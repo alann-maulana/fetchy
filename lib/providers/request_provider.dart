@@ -135,7 +135,27 @@ class RequestEditorNotifier extends StateNotifier<RequestEditorState> {
   RequestEditorNotifier(this._requestService) : super(const RequestEditorState());
 
   void setMethod(String m) => state = state.copyWith(method: m, clearResponse: true);
-  void setUrl(String u) => state = state.copyWith(url: u, clearResponse: true);
+  void setUrl(String u) {
+    final uri = Uri.tryParse(u);
+    if (uri != null && uri.queryParameters.isNotEmpty) {
+      final urlParams = uri.queryParameters;
+      final cleanUrl = u.split('?')[0];
+      final merged = <KVEntry>[];
+      final urlKeys = <String>{};
+      for (final e in urlParams.entries) {
+        urlKeys.add(e.key);
+        merged.add(KVEntry(key: e.key, value: e.value));
+      }
+      for (final e in state.queryParams) {
+        if (!urlKeys.contains(e.key)) {
+          merged.add(e);
+        }
+      }
+      state = state.copyWith(url: cleanUrl, queryParams: merged, clearResponse: true);
+    } else {
+      state = state.copyWith(url: u, clearResponse: true);
+    }
+  }
   void setTab(int t) => state = state.copyWith(selectedTab: t);
   void setQueryParams(List<KVEntry> p) => state = state.copyWith(queryParams: p, clearResponse: true);
   void setHeaders(List<KVEntry> h) => state = state.copyWith(headers: h, clearResponse: true);
