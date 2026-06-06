@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/api_request.dart';
 import '../models/api_response.dart';
 import '../services/http_client.dart';
 import '../services/request_service.dart';
@@ -39,6 +40,7 @@ class RequestEditorState {
   final bool isLoading;
   final String? error;
   final int selectedTab;
+  final String? currentRequestId;
 
   const RequestEditorState({
     this.method = 'GET',
@@ -58,6 +60,7 @@ class RequestEditorState {
     this.isLoading = false,
     this.error,
     this.selectedTab = 0,
+    this.currentRequestId,
   });
 
   Map<String, dynamic> get headersMap {
@@ -94,6 +97,7 @@ class RequestEditorState {
     bool? isLoading,
     String? error,
     int? selectedTab,
+    String? currentRequestId,
     bool clearResponse = false,
     bool clearError = false,
   }) {
@@ -115,6 +119,7 @@ class RequestEditorState {
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
       selectedTab: selectedTab ?? this.selectedTab,
+      currentRequestId: currentRequestId ?? this.currentRequestId,
     );
   }
 }
@@ -161,9 +166,65 @@ class RequestEditorNotifier extends StateNotifier<RequestEditorState> {
     };
   }
 
+  void loadRequest(ApiRequest request) {
+    List<KVEntry> mapToKvs(Map<String, dynamic>? map) {
+      if (map == null) return [];
+      return map.entries
+          .map((e) => KVEntry(key: e.key, value: e.value.toString()))
+          .toList();
+    }
+
+    String authField(String key) {
+      return request.authData?[key]?.toString() ?? '';
+    }
+
+    state = RequestEditorState(
+      method: request.method,
+      url: request.url,
+      queryParams: mapToKvs(request.queryParams),
+      headers: mapToKvs(request.headers),
+      bodyType: request.bodyType ?? 'none',
+      bodyContent: request.body?.toString() ?? '',
+      authType: request.authType ?? 'none',
+      authUsername: authField('username'),
+      authPassword: authField('password'),
+      authToken: authField('token'),
+      authKey: authField('key'),
+      authValue: authField('value'),
+      authAddTo: authField('addTo'),
+      currentRequestId: request.id,
+    );
+  }
+
+  ApiRequest buildRequest({String? name, String? collectionId}) {
+    return ApiRequest(
+      id: state.currentRequestId,
+      name: name ?? 'Untitled',
+      url: state.url,
+      method: state.method,
+      headers: state.headersMap.isNotEmpty ? state.headersMap : null,
+      queryParams: state.queryParamsMap.isNotEmpty ? state.queryParamsMap : null,
+      body: _getBody(),
+      bodyType: state.bodyType != 'none' ? state.bodyType : null,
+      authType: state.authType != 'none' ? state.authType : null,
+      authData: _getAuthData().isNotEmpty ? _getAuthData() : null,
+      collectionId: collectionId,
+    );
+  }
+
+  void reset() {
+    state = const RequestEditorState();
+  }
+
+  void saveToCollection(String collectionId, String name) {
+    final request = buildRequest(name: name, collectionId: collectionId);
+    state = state.copyWith(currentRequestId: request.id);
+    // Storage save is handled by the screen via provider
+  }
+
   Future<void> sendRequest() async {
     if (state.url.isEmpty) return;
-    state = state.copyWith(isLoading: true, clearError: true);
+    state = state.copyWith(isLoading: true, clearError: true, clearResponse: true);
     try {
       final response = await _requestService.executeRequest(
         method: state.method,

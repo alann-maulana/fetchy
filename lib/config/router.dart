@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../screens/home_screen.dart';
 import '../screens/collections_screen.dart';
+import '../screens/collection_detail_screen.dart';
 import '../screens/environments_screen.dart';
+import '../screens/environment_detail_screen.dart';
 import '../screens/request_screen.dart';
 import '../screens/settings_screen.dart';
 
@@ -26,10 +28,26 @@ final GoRouter router = GoRouter(
         GoRoute(
           path: '/collections',
           builder: (context, state) => const CollectionsScreen(),
+          routes: [
+            GoRoute(
+              path: ':id',
+              builder: (context, state) => CollectionDetailScreen(
+                collectionId: state.pathParameters['id']!,
+              ),
+            ),
+          ],
         ),
         GoRoute(
           path: '/environments',
           builder: (context, state) => const EnvironmentsScreen(),
+          routes: [
+            GoRoute(
+              path: ':id',
+              builder: (context, state) => EnvironmentDetailScreen(
+                environmentId: state.pathParameters['id']!,
+              ),
+            ),
+          ],
         ),
         GoRoute(
           path: '/settings',

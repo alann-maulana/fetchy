@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../models/api_request.dart';
 import '../providers/request_provider.dart';
+import '../providers/storage_provider.dart';
 import '../widgets/auth_editor.dart';
 import '../widgets/body_editor.dart';
 import '../widgets/kv_editor.dart';
@@ -15,17 +18,30 @@ class RequestScreen extends ConsumerStatefulWidget {
 
 class _RequestScreenState extends ConsumerState<RequestScreen> {
   late TextEditingController _urlController;
+  String? _loadedRequestId;
 
   @override
   void initState() {
     super.initState();
     _urlController = TextEditingController();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRequest();
+    });
   }
 
   @override
   void dispose() {
     _urlController.dispose();
     super.dispose();
+  }
+
+  void _loadRequest() {
+    final extra = GoRouterState.of(context).extra;
+    if (extra is ApiRequest && extra.id != _loadedRequestId) {
+      _loadedRequestId = extra.id;
+      ref.read(requestEditorProvider.notifier).loadRequest(extra);
+      _urlController.text = extra.url;
+    }
   }
 
   @override
@@ -70,12 +86,18 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               ),
             )
-          else
+          else ...[
+            IconButton(
+              icon: const Icon(Icons.save_outlined),
+              tooltip: 'Save',
+              onPressed: () => _showSaveDialog(state, notifier),
+            ),
             IconButton(
               icon: const Icon(Icons.send),
               tooltip: 'Send',
               onPressed: () => notifier.sendRequest(),
             ),
+          ],
         ],
       ),
       body: Column(
@@ -177,6 +199,101 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
     );
   }
 
+  void _showSaveDialog(RequestEditorState state, RequestEditorNotifier notifier) {
+    if (state.url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Nothing to save — URL is empty')),
+      );
+      return;
+    }
+
+    final allCollections = ref.read(collectionsProvider);
+    final nameController = TextEditingController();
+    String? selectedCollectionId;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Save Request'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  decoration: InputDecoration(
+                    labelText: 'Request name',
+                    hintText: state.method.isNotEmpty
+                        ? '${state.method} ${state.url}'
+                        : 'My Request',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                if (allCollections.isNotEmpty) ...[
+                  DropdownButtonFormField<String>(
+                    initialValue: selectedCollectionId,
+                    decoration: const InputDecoration(
+                      labelText: 'Collection (optional)',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.folder_outlined),
+                    ),
+                    items: [
+                      const DropdownMenuItem(
+                        value: null,
+                        child: Text('None — save as standalone'),
+                      ),
+                      ...allCollections.map((c) => DropdownMenuItem(
+                            value: c.id,
+                            child: Text(c.name),
+                          )),
+                    ],
+                    onChanged: (v) => setDialogState(() => selectedCollectionId = v),
+                  ),
+                ] else ...[
+                  const Text(
+                    'No collections yet. Save will create a standalone request.',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                final name = nameController.text.trim().isNotEmpty
+                    ? nameController.text.trim()
+                    : '${state.method} ${state.url}';
+                final request = notifier.buildRequest(
+                  name: name,
+                  collectionId: selectedCollectionId,
+                );
+                ref.read(savedRequestsProvider.notifier).save(request);
+                if (selectedCollectionId != null) {
+                  ref
+                      .read(collectionsProvider.notifier)
+                      .addRequest(selectedCollectionId!, request.id);
+                }
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Saved "$name"')),
+                );
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _UrlBar extends StatelessWidget {
