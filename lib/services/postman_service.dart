@@ -60,14 +60,23 @@ class PostmanService {
     final requests = <ApiRequest>[];
     final requestIds = <String>[];
 
-    for (final item in items) {
-      if (item is Map<String, dynamic>) {
-        final result = _parseItem(item, collection.id);
-        if (result != null) {
-          requests.add(result);
-          requestIds.add(result.id);
+    void collect(Map<String, dynamic> item) {
+      if (item.containsKey('item')) {
+        final subItems = item['item'] as List<dynamic>? ?? [];
+        for (final sub in subItems) {
+          if (sub is Map<String, dynamic>) collect(sub);
         }
+        return;
       }
+      final result = _parseItem(item, collection.id);
+      if (result != null) {
+        requests.add(result);
+        requestIds.add(result.id);
+      }
+    }
+
+    for (final item in items) {
+      if (item is Map<String, dynamic>) collect(item);
     }
 
     final finalCollection = collection.copyWith(requestIds: requestIds);
