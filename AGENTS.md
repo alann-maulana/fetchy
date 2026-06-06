@@ -44,6 +44,18 @@ After editing any `@HiveType` + `@JsonSerializable` model:
 dart run build_runner build
 ```
 
+## Commits
+
+| Rule | Detail |
+|---|---|
+| Format | `type(scope): description` |
+| Types | `feat`, `fix`, `refactor`, `style`, `test`, `docs`, `chore`, `perf` |
+| Scope | component name (e.g. `request`, `collection`, `home`, `provider`) |
+| Description | lowercase, imperative mood, no period |
+| Body | blank line after subject, wrap at 72 chars, explain *why* |
+| Footer | `BREAKING CHANGE:` or issue refs like `Closes #123` |
+| Examples | `feat(request): add multipart body support` — `fix(collection): preserve sort order on rename` — `refactor(provider): extract KVEntry helper` |
+
 ## Testing
 
 Test at `test/widget_test.dart` uses a temp Hive directory (`.test_hive`). setUp opens 3 boxes with adapter registration. tearDown deletes them from disk. App test expects `Text('Requests')`, `Text('No saved requests yet')`, `Text('New Request')` on home screen.
