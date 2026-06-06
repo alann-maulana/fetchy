@@ -1,6 +1,6 @@
 # fetchy — Agent Guide
 
-Flutter mobile REST API client (like Postman for mobile). Phase 1: skeleton with placeholder screens.
+Flutter mobile REST API client (like Postman for mobile).
 
 ## Commands
 
@@ -14,32 +14,45 @@ Flutter mobile REST API client (like Postman for mobile). Phase 1: skeleton with
 | `dart run build_runner build` | Regenerate `.g.dart` after model changes |
 | `dart run build_runner build --delete-conflicting-outputs` | Force regenerate on conflicts |
 
-**CI**: none configured yet (no `.github/workflows`).
+No CI configured (no `.github/workflows`).
 
 ## Architecture
 
 ```
 lib/
   config/         theme.dart, router.dart
-  models/         ApiRequest, Collection, Environment, ApiResponse
-  screens/        home, collections, environments, settings
-  services/       HttpClientService (Dio wrapper)
+  models/         ApiRequest, Collection, Environment (Hive + JSON), ApiResponse (JSON only)
+  providers/      Riverpod StateNotifier + Notifier providers
+  screens/        8 screens (home, request, collection list/detail, environment list/detail, settings)
+  services/       HttpClientService (Dio), RequestService (auth/body), PostmanService (import/export)
+  utils/          empty
+  widgets/        KVEditor, BodyEditor, AuthEditor, ResponseViewer, JsonViewer
 ```
 
-- **State**: Riverpod — `ProviderScope` wraps app at `main.dart`. All dependent widgets use `ConsumerWidget` or `ref.watch`.
-- **Routing**: go_router with `ShellRoute` + `NavigationBar` (4 tabs).
-- **Storage**: Hive — init in `main.dart`. Adapter registration + box opening currently commented out (phase 1).
-- **Models**: dual-annotated `@HiveType` + `@JsonSerializable`. Use `copyWith` for immutability. `ApiResponse` is JSON-only (not stored).
-- **HTTP**: Dio — `validateStatus: (s) => true` (accepts all status codes). 30s timeouts. `LogInterceptor` on by default.
+- **State**: Riverpod — `ProviderScope` wraps app at `main.dart`. Screens use `ConsumerWidget` / `ConsumerStatefulWidget`. Notifier providers with `ref.watch()` + `ref.read().notifier` pattern.
+- **Routing**: go_router with `ShellRoute` + `NavigationBar` (4 tabs: Home, Collections, Environments, Settings). `/request` route outside shell (full-screen request editor).
+- **Storage**: Hive — initialized in `main.dart`. Boxes: `requests`, `collections`, `environments`. Adapters registered before box open.
+- **Models**: dual-annotated `@HiveType` + `@JsonSerializable`. Use `copyWith` for immutability. `ApiResponse` is `@JsonSerializable` only (not stored in Hive). Generated `.g.dart` files checked in.
+- **HTTP**: Dio — `validateStatus: (s) => true` (accept all status codes). 5-minute connect/receive/send timeouts. `LogInterceptor` with request+response body on by default.
+- **Postman**: `PostmanService` supports import/export of collections and environments (v2.1 schema).
 
 ## Codegen
 
-Models use `@HiveType` and `@JsonSerializable`. Generated `.g.dart` files are checked in. After editing any annotated model:
+After editing any `@HiveType` + `@JsonSerializable` model:
 
 ```bash
 dart run build_runner build
 ```
 
-## Project state
+## Testing
 
-Phase 1 skeleton — all screens are `StatelessWidget` with placeholder text. `widgets/` directory exists but empty. `providers/` directory does not exist yet (place alongside `screens/` or at `lib/providers/` when added). Hive adapter registration + box opening are commented out in `main.dart` — uncomment when adapters are generated.
+Test at `test/widget_test.dart` uses a temp Hive directory (`.test_hive`). setUp opens 3 boxes with adapter registration. tearDown deletes them from disk. App test expects `Text('Requests')`, `Text('No saved requests yet')`, `Text('New Request')` on home screen.
+
+## Providers
+
+All storage providers in `lib/providers/storage_provider.dart`:
+- `savedRequestsProvider` / `SavedRequestsNotifier` — list of `ApiRequest` sorted by `updatedAt` desc. CRUD via `save`, `delete`, `rename`.
+- `collectionsProvider` / `CollectionsNotifier` — list of `Collection` sorted by `updatedAt` desc. CRUD plus `addRequest` / `removeRequest`.
+- `environmentsProvider` / `EnvironmentsNotifier` — list of `Environment`. CRUD plus `activate` (deactivates others, singleton active env).
+
+`RequestEditorNotifier` in `lib/providers/request_provider.dart` manages the request compose screen state (method, URL, params, headers, body, auth, response). `KVEntry` helper for key-value list editing.
