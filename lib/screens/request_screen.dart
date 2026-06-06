@@ -41,6 +41,10 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
       _loadedRequestId = extra.id;
       ref.read(requestEditorProvider.notifier).loadRequest(extra);
       _urlController.text = extra.url;
+    } else if (extra == null) {
+      _loadedRequestId = null;
+      ref.read(requestEditorProvider.notifier).reset();
+      _urlController.clear();
     }
   }
 
