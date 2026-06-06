@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../config/spacing.dart';
 import '../providers/storage_provider.dart';
 import '../services/postman_service.dart';
+import '../widgets/empty_state.dart';
 
 class EnvironmentsScreen extends ConsumerStatefulWidget {
   const EnvironmentsScreen({super.key});
@@ -21,6 +23,7 @@ class _EnvironmentsScreenState extends ConsumerState<EnvironmentsScreen> {
   Widget build(BuildContext context) {
     final environments = ref.watch(environmentsProvider);
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -34,104 +37,148 @@ class _EnvironmentsScreenState extends ConsumerState<EnvironmentsScreen> {
         ],
       ),
       body: environments.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.layers_outlined,
-                      size: 64,
-                      color: theme.colorScheme.onSurfaceVariant.withAlpha(100)),
-                  const SizedBox(height: 16),
-                  Text('No environments yet',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 8),
-                  Text('Create environments to manage variables',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
-                ],
+          ? EmptyState(
+              icon: Icons.layers_outlined,
+              title: 'No environments yet',
+              subtitle: 'Create environments to manage variables',
+              action: FilledButton.icon(
+                onPressed: _createEnvironment,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('New Environment'),
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: EdgeInsets.only(top: Spacing.sm, bottom: 80),
               itemCount: environments.length,
               itemBuilder: (_, i) {
                 final env = environments[i];
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: env.isActive
-                            ? theme.colorScheme.primaryContainer
-                            : theme.colorScheme.surfaceContainerHighest,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        env.isActive ? Icons.check_circle : Icons.layers_outlined,
-                        color: env.isActive
-                            ? theme.colorScheme.primary
-                            : theme.colorScheme.onSurfaceVariant,
-                        size: 20,
-                      ),
-                    ),
-                    title: Row(
-                      children: [
-                        Flexible(
-                          child: Text(env.name,
-                              style: const TextStyle(fontWeight: FontWeight.w500),
-                              overflow: TextOverflow.ellipsis),
-                        ),
-                        if (env.isActive) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: theme.colorScheme.primaryContainer,
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text('ACTIVE',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.w700,
-                                  color: theme.colorScheme.primary,
-                                )),
-                          ),
-                        ],
-                      ],
-                    ),
-                    subtitle: Text(
-                      '${env.variables.length} variables',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      itemBuilder: (_) => [
-                        if (!env.isActive)
-                          const PopupMenuItem(
-                              value: 'activate', child: Text('Activate')),
-                        const PopupMenuItem(
-                            value: 'export', child: Text('Export to clipboard')),
-                        const PopupMenuItem(
-                            value: 'delete', child: Text('Delete')),
-                      ],
-                      onSelected: (v) {
-                        if (v == 'activate') {
-                          ref
-                              .read(environmentsProvider.notifier)
-                              .activate(env.id);
-                        } else if (v == 'export') {
-                          _exportEnvironment(env);
-                        } else if (v == 'delete') {
-                          _deleteEnvironment(env);
-                        }
-                      },
-                    ),
+                  margin: EdgeInsets.fromLTRB(
+                      Spacing.lg, Spacing.xs, Spacing.lg, Spacing.xs),
+                  child: InkWell(
                     onTap: () =>
                         context.push('/environments/${env.id}'),
+                    borderRadius: BorderRadius.circular(Spacing.cardRadius),
+                    child: Padding(
+                      padding: const EdgeInsets.all(Spacing.lg),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: env.isActive
+                                  ? colors.primaryContainer.withValues(alpha: 0.6)
+                                  : colors.surfaceContainerHighest,
+                              borderRadius:
+                                  BorderRadius.circular(Spacing.md),
+                            ),
+                            child: Icon(
+                              env.isActive
+                                  ? Icons.check_circle
+                                  : Icons.layers_outlined,
+                              color: env.isActive
+                                  ? colors.primary
+                                  : colors.onSurfaceVariant,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: Spacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Flexible(
+                                      child: Text(
+                                        env.name,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 14),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    if (env.isActive) ...[
+                                      const SizedBox(width: Spacing.sm),
+                                      Container(
+                                        padding: EdgeInsets.symmetric(
+                                            horizontal: Spacing.sm,
+                                            vertical: Spacing.xxs),
+                                        decoration: BoxDecoration(
+                                          color: colors.primaryContainer,
+                                          borderRadius:
+                                              BorderRadius.circular(
+                                                  Spacing.chipRadius),
+                                        ),
+                                        child: Text(
+                                          'ACTIVE',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                            letterSpacing: 0.5,
+                                            color: colors.primary,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ],
+                                ),
+                                const SizedBox(height: Spacing.xxs),
+                                Text(
+                                  '${env.variables.length} variables',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                      color: colors.onSurfaceVariant),
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuButton<String>(
+                            itemBuilder: (_) => [
+                              if (!env.isActive)
+                                const PopupMenuItem(
+                                    value: 'activate',
+                                    child: ListTile(
+                                      leading: Icon(Icons.play_circle_outline,
+                                          size: 18),
+                                      title: Text('Activate'),
+                                      dense: true,
+                                      contentPadding: EdgeInsets.zero,
+                                    )),
+                              const PopupMenuItem(
+                                  value: 'export',
+                                  child: ListTile(
+                                    leading: Icon(Icons.file_upload_outlined,
+                                        size: 18),
+                                    title: Text('Export'),
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  )),
+                              const PopupMenuItem(
+                                  value: 'delete',
+                                  child: ListTile(
+                                    leading: Icon(Icons.delete_outline,
+                                        size: 18),
+                                    title: Text('Delete'),
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                  )),
+                            ],
+                            onSelected: (v) {
+                              if (v == 'activate') {
+                                ref
+                                    .read(environmentsProvider.notifier)
+                                    .activate(env.id);
+                              } else if (v == 'export') {
+                                _exportEnvironment(env);
+                              } else if (v == 'delete') {
+                                _deleteEnvironment(env);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
@@ -154,7 +201,7 @@ class _EnvironmentsScreenState extends ConsumerState<EnvironmentsScreen> {
           controller: controller,
           autofocus: true,
           decoration: const InputDecoration(
-            labelText: 'Environment name',
+            hintText: 'Environment name',
             border: OutlineInputBorder(),
           ),
         ),
@@ -222,7 +269,7 @@ class _EnvironmentsScreenState extends ConsumerState<EnvironmentsScreen> {
               hintText: 'Paste Postman Environment JSON here...',
               border: OutlineInputBorder(),
             ),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            style: TextStyle(fontFamily: 'monospace', fontSize: 12),
           ),
         ),
         actions: [
@@ -245,7 +292,6 @@ class _EnvironmentsScreenState extends ConsumerState<EnvironmentsScreen> {
       final data = jsonDecode(jsonText) as Map<String, dynamic>;
       final env = _postmanService.importEnvironment(data);
       ref.read(environmentsProvider.notifier).create(env.name);
-      // Update with imported variables
       final envs = ref.read(environmentsProvider);
       final newEnv = envs.firstWhere(
         (e) => e.name == env.name,

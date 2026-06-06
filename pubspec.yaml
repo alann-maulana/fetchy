@@ -13,6 +13,10 @@ dependencies:
 
   # UI
   cupertino_icons: ^1.0.8
+  google_fonts: ^6.2.1
+  flutter_animate: ^4.5.2
+  shimmer: ^3.0.0
+  flex_seed_scheme: ^3.6.0
   
   # HTTP Client
   dio: ^5.4.0

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import '../config/theme.dart';
+import '../config/spacing.dart';
+import '../config/typography.dart';
 import '../models/api_request.dart';
 import '../providers/request_provider.dart';
 import '../providers/storage_provider.dart';
@@ -16,14 +20,22 @@ class RequestScreen extends ConsumerStatefulWidget {
   ConsumerState<RequestScreen> createState() => _RequestScreenState();
 }
 
-class _RequestScreenState extends ConsumerState<RequestScreen> {
+class _RequestScreenState extends ConsumerState<RequestScreen>
+    with SingleTickerProviderStateMixin {
   late TextEditingController _urlController;
   String? _loadedRequestId;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
     _urlController = TextEditingController();
+    _tabController = TabController(length: 4, vsync: this);
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) {
+        ref.read(requestEditorProvider.notifier).setTab(_tabController.index);
+      }
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadRequest();
     });
@@ -32,7 +44,16 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
   @override
   void dispose() {
     _urlController.dispose();
+    _tabController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant RequestScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadRequest();
+    });
   }
 
   void _loadRequest() {
@@ -41,7 +62,7 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
       _loadedRequestId = extra.id;
       ref.read(requestEditorProvider.notifier).loadRequest(extra);
       _urlController.text = extra.url;
-    } else if (extra == null) {
+    } else if (extra == null && mounted) {
       _loadedRequestId = null;
       ref.read(requestEditorProvider.notifier).reset();
       _urlController.clear();
@@ -52,33 +73,40 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
   Widget build(BuildContext context) {
     final state = ref.watch(requestEditorProvider);
     final notifier = ref.read(requestEditorProvider.notifier);
-    final theme = Theme.of(context);
+    final colors = Theme.of(context).colorScheme;
 
-    final methodColors = {
-      'GET': const Color(0xFF61AFFE),
-      'POST': const Color(0xFF49CC90),
-      'PUT': const Color(0xFFFCA130),
-      'PATCH': const Color(0xFF50E3C2),
-      'DELETE': const Color(0xFFF93E3E),
-      'HEAD': const Color(0xFF9012FE),
-      'OPTIONS': const Color(0xFF0D5AA7),
-    };
-
-    final methodColor = methodColors[state.method] ?? Colors.grey;
-
-    final tabs = ['Params', 'Headers', 'Body', 'Auth'];
-    final tabIcons = const [
-      Icons.merge_type,
-      Icons.list,
-      Icons.description_outlined,
-      Icons.lock_outline,
-    ];
+    final method = state.method;
+    final mColor = method.methodColor;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          state.method.isNotEmpty ? state.method : 'Request',
-          style: TextStyle(color: methodColor, fontWeight: FontWeight.bold),
+        title: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xxs),
+              decoration: BoxDecoration(
+                color: mColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(Spacing.chipRadius),
+                border: Border.all(color: mColor.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                method,
+                style: AppTextStyles.methodBadge.copyWith(color: mColor),
+              ),
+            ),
+            const SizedBox(width: Spacing.sm),
+            Expanded(
+              child: Text(
+                state.url.isNotEmpty ? state.url : 'Request',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: colors.onSurface,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
         actions: [
           if (state.isLoading)
@@ -106,69 +134,49 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
       ),
       body: Column(
         children: [
+          // URL bar
           _UrlBar(
             controller: _urlController,
-            method: state.method,
-            methodColor: methodColor,
+            method: method,
+            methodColor: mColor,
             onMethodChanged: notifier.setMethod,
-            onUrlChanged: notifier.setUrl,
+            onUrlChanged: (v) {
+              _urlController.text = v;
+              _urlController.selection = TextSelection.collapsed(offset: v.length);
+              notifier.setUrl(v);
+            },
             onSend: notifier.sendRequest,
             isLoading: state.isLoading,
           ),
           const Divider(height: 1),
+
+          // Tabs
           Container(
-            color: theme.colorScheme.surfaceContainerLow,
-            child: Row(
-              children: List.generate(tabs.length, (i) {
-                final selected = state.selectedTab == i;
-                return Expanded(
-                  child: InkWell(
-                    onTap: () => notifier.setTab(i),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      decoration: BoxDecoration(
-                        border: Border(
-                          bottom: BorderSide(
-                            color: selected ? theme.colorScheme.primary : Colors.transparent,
-                            width: 2,
-                          ),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            tabIcons[i],
-                            size: 16,
-                            color: selected
-                                ? theme.colorScheme.primary
-                                : theme.colorScheme.onSurfaceVariant,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            tabs[i],
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
-                              color: selected
-                                  ? theme.colorScheme.primary
-                                  : theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                );
-              }),
+            color: colors.surfaceContainerLow,
+            child: TabBar(
+              controller: _tabController,
+              labelColor: colors.primary,
+              unselectedLabelColor: colors.onSurfaceVariant,
+              indicatorColor: colors.primary,
+              indicatorWeight: 2,
+              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: const TextStyle(fontSize: 13),
+              tabs: const [
+                Tab(text: 'Params', icon: Icon(Icons.merge_type, size: 16)),
+                Tab(text: 'Headers', icon: Icon(Icons.list, size: 16)),
+                Tab(text: 'Body', icon: Icon(Icons.description_outlined, size: 16)),
+                Tab(text: 'Auth', icon: Icon(Icons.lock_outline, size: 16)),
+              ],
             ),
           ),
+
+          // Tab content
           Expanded(
-            child: IndexedStack(
-              index: state.selectedTab,
+            child: TabBarView(
+              controller: _tabController,
               children: [
                 SingleChildScrollView(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(Spacing.md),
                   child: KVEditor(
                     entries: state.queryParams,
                     onChanged: notifier.setQueryParams,
@@ -177,7 +185,7 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
                   ),
                 ),
                 SingleChildScrollView(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(Spacing.md),
                   child: KVEditor(
                     entries: state.headers,
                     onChanged: notifier.setHeaders,
@@ -187,17 +195,19 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
                 ),
                 BodyEditor(state: state, notifier: notifier),
                 SingleChildScrollView(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.all(Spacing.md),
                   child: AuthEditor(state: state, notifier: notifier),
                 ),
               ],
             ),
           ),
+
+          // Response
           if (state.response != null)
             ResponseViewer(
               response: state.response!,
               error: state.error,
-            ),
+            ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0),
         ],
       ),
     );
@@ -247,21 +257,20 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
                   controller: nameController,
                   autofocus: true,
                   decoration: InputDecoration(
-                    labelText: 'Request name',
                     hintText: state.method.isNotEmpty
                         ? '${state.method} ${state.url}'
                         : 'My Request',
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: Spacing.lg),
                 if (allCollections.isNotEmpty) ...[
                   DropdownButtonFormField<String>(
                     initialValue: selectedCollectionId,
                     decoration: const InputDecoration(
-                      labelText: 'Collection (optional)',
+                      hintText: 'Collection (optional)',
                       border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.folder_outlined),
+                      prefixIcon: Icon(Icons.folder_outlined, size: 20),
                     ),
                     items: [
                       const DropdownMenuItem(
@@ -276,9 +285,9 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
                     onChanged: (v) => setDialogState(() => selectedCollectionId = v),
                   ),
                 ] else ...[
-                  const Text(
+                  Text(
                     'No collections yet. Save will create a standalone request.',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                   ),
                 ],
               ],
@@ -341,38 +350,39 @@ class _UrlBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 8, 4, 8),
+      padding: EdgeInsets.fromLTRB(Spacing.md, Spacing.sm, Spacing.xs, Spacing.sm),
       child: Row(
         children: [
           DropdownButtonHideUnderline(
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10),
+              padding: EdgeInsets.symmetric(horizontal: Spacing.md, vertical: 2),
               decoration: BoxDecoration(
-                color: methodColor.withAlpha(25),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: methodColor.withAlpha(80)),
+                color: methodColor.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(Spacing.inputRadius),
+                border: Border.all(color: methodColor.withValues(alpha: 0.25)),
               ),
               child: DropdownButton<String>(
                 value: method,
                 style: TextStyle(
                   color: methodColor,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  letterSpacing: 0.3,
                 ),
+                underline: const SizedBox.shrink(),
                 items: _methods.map((m) {
-                  final c = {
-                    'GET': const Color(0xFF61AFFE),
-                    'POST': const Color(0xFF49CC90),
-                    'PUT': const Color(0xFFFCA130),
-                    'PATCH': const Color(0xFF50E3C2),
-                    'DELETE': const Color(0xFFF93E3E),
-                    'HEAD': const Color(0xFF9012FE),
-                    'OPTIONS': const Color(0xFF0D5AA7),
-                  }[m]!;
+                  final c = m.methodColor;
                   return DropdownMenuItem(
                     value: m,
-                    child: Text(m, style: TextStyle(color: c, fontWeight: FontWeight.w600, fontSize: 13)),
+                    child: Text(m,
+                        style: TextStyle(
+                            color: c,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12,
+                            letterSpacing: 0.3)),
                   );
                 }).toList(),
                 onChanged: (v) {
@@ -381,22 +391,30 @@ class _UrlBar extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: Spacing.sm),
           Expanded(
-            child: TextField(
-              controller: controller,
-              decoration: InputDecoration(
-                hintText: 'https://api.example.com/endpoint',
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(Spacing.inputRadius),
+                border: Border.all(color: colors.outlineVariant),
               ),
-              style: const TextStyle(fontSize: 14, fontFamily: 'monospace'),
-              onChanged: onUrlChanged,
-              onSubmitted: (_) => onSend(),
+              child: TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'https://api.example.com/endpoint',
+                  isDense: true,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: Spacing.md, vertical: Spacing.sm),
+                  border: InputBorder.none,
+                  filled: false,
+                ),
+                style: AppTextStyles.code.copyWith(fontSize: 14),
+                onChanged: onUrlChanged,
+                onSubmitted: (_) => onSend(),
+              ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: Spacing.xs),
           IconButton.filled(
             icon: const Icon(Icons.play_arrow),
             tooltip: 'Send',
@@ -404,6 +422,9 @@ class _UrlBar extends StatelessWidget {
             style: IconButton.styleFrom(
               backgroundColor: methodColor,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(Spacing.inputRadius),
+              ),
             ),
           ),
         ],

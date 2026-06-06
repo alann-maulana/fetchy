@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../config/spacing.dart';
 import '../providers/storage_provider.dart';
 import '../services/postman_service.dart';
+import '../widgets/empty_state.dart';
 
 class CollectionsScreen extends ConsumerStatefulWidget {
   const CollectionsScreen({super.key});
@@ -19,6 +21,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
   Widget build(BuildContext context) {
     final collections = ref.watch(collectionsProvider);
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     return Scaffold(
       appBar: AppBar(
@@ -32,26 +35,18 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
         ],
       ),
       body: collections.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.folder_outlined,
-                      size: 64,
-                      color: theme.colorScheme.onSurfaceVariant.withAlpha(100)),
-                  const SizedBox(height: 16),
-                  Text('No collections yet',
-                      style: theme.textTheme.titleMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
-                  const SizedBox(height: 8),
-                  Text('Create a collection to organize your requests',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
-                ],
+          ? EmptyState(
+              icon: Icons.folder_outlined,
+              title: 'No collections yet',
+              subtitle: 'Group your API requests into collections',
+              action: FilledButton.icon(
+                onPressed: _createCollection,
+                icon: const Icon(Icons.create_new_folder, size: 18),
+                label: const Text('New Collection'),
               ),
             )
           : ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 4),
+              padding: EdgeInsets.only(top: Spacing.sm, bottom: 80),
               itemCount: collections.length,
               itemBuilder: (_, i) {
                 final col = collections[i];
@@ -60,36 +55,67 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
                     col.requestIds.where((id) => allRequests.any((r) => r.id == id)).length;
 
                 return Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  child: ListTile(
-                    leading: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primaryContainer,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(Icons.folder,
-                          color: theme.colorScheme.primary, size: 20),
-                    ),
-                    title: Text(col.name,
-                        style: const TextStyle(fontWeight: FontWeight.w500)),
-                    subtitle: Text(
-                      '$reqCount requests${col.description != null && col.description!.isNotEmpty ? ' — ${col.description}' : ''}',
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    trailing: PopupMenuButton<String>(
-                      itemBuilder: (_) => [
-                        const PopupMenuItem(value: 'rename', child: Text('Rename')),
-                        const PopupMenuItem(value: 'delete', child: Text('Delete')),
-                      ],
-                      onSelected: (v) {
-                        if (v == 'rename') _renameCollection(col);
-                        if (v == 'delete') _deleteCollection(col);
-                      },
-                    ),
+                  margin: EdgeInsets.fromLTRB(Spacing.lg, Spacing.xs, Spacing.lg, Spacing.xs),
+                  child: InkWell(
                     onTap: () => context.push('/collections/${col.id}'),
+                    borderRadius: BorderRadius.circular(Spacing.cardRadius),
+                    child: Padding(
+                      padding: const EdgeInsets.all(Spacing.lg),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
+                              color: colors.primaryContainer.withValues(alpha: 0.6),
+                              borderRadius: BorderRadius.circular(Spacing.md),
+                            ),
+                            child: Icon(
+                              Icons.folder,
+                              color: colors.primary,
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(width: Spacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(col.name,
+                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                const SizedBox(height: Spacing.xxs),
+                                Text(
+                                  reqCount == 1 ? '1 request' : '$reqCount requests',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: colors.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          PopupMenuButton<String>(
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(value: 'rename', child: ListTile(
+                                leading: Icon(Icons.edit_outlined, size: 18),
+                                title: Text('Rename'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              )),
+                              const PopupMenuItem(value: 'delete', child: ListTile(
+                                leading: Icon(Icons.delete_outline, size: 18),
+                                title: Text('Delete'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              )),
+                            ],
+                            onSelected: (v) {
+                              if (v == 'rename') _renameCollection(col);
+                              if (v == 'delete') _deleteCollection(col);
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 );
               },
@@ -116,15 +142,15 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               controller: controller,
               autofocus: true,
               decoration: const InputDecoration(
-                labelText: 'Collection name',
+                hintText: 'Collection name',
                 border: OutlineInputBorder(),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: Spacing.md),
             TextField(
               controller: descController,
               decoration: const InputDecoration(
-                labelText: 'Description (optional)',
+                hintText: 'Description (optional)',
                 border: OutlineInputBorder(),
               ),
               maxLines: 2,
@@ -155,12 +181,12 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rename'),
+        title: const Text('Rename collection'),
         content: TextField(
           controller: controller,
           autofocus: true,
           decoration: const InputDecoration(
-            labelText: 'Collection name',
+            hintText: 'Collection name',
             border: OutlineInputBorder(),
           ),
         ),
@@ -187,7 +213,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('Delete Collection'),
-        content: Text('Delete "${col.name}"? Requests in this collection will not be deleted.'),
+        content: Text('Delete "${col.name}"? Requests inside will not be deleted.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
@@ -218,7 +244,7 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
               hintText: 'Paste Postman Collection v2.1 JSON here...',
               border: OutlineInputBorder(),
             ),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            style: TextStyle(fontFamily: 'monospace', fontSize: 12),
           ),
         ),
         actions: [
@@ -247,7 +273,6 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       for (final req in result.requests) {
         requestsNotifier.save(req);
       }
-      // Find the newly created collection and add requests
       final cols = ref.read(collectionsProvider);
       final newCol = cols.firstWhere(
         (c) => c.name == result.collection.name,
@@ -258,7 +283,8 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       }
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Imported "${result.collection.name}" with ${result.requests.length} requests'),
+          content: Text(
+              'Imported "${result.collection.name}" with ${result.requests.length} requests'),
         ),
       );
     } catch (e) {

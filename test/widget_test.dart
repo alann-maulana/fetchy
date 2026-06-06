@@ -32,6 +32,7 @@ void main() {
 
     expect(find.text('Requests'), findsOneWidget);
     expect(find.text('No saved requests yet'), findsOneWidget);
-    expect(find.text('New Request'), findsOneWidget);
+    expect(find.text('Create your first API request to get started'), findsOneWidget);
+    expect(find.text('New Request'), findsWidgets);
   });
 }

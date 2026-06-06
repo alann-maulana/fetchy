@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/spacing.dart';
 import '../providers/request_provider.dart';
 
 class AuthEditor extends StatelessWidget {
@@ -30,41 +31,41 @@ class AuthEditor extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: types.map((t) {
-              final selected = state.authType == t;
-              return Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: ChoiceChip(
-                  avatar: Icon(icons[t], size: 16),
-                  label: Text(labels[t]!),
-                  selected: selected,
-                  onSelected: (_) => notifier.setAuthType(t),
-                ),
-              );
-            }).toList(),
-          ),
+        Wrap(
+          spacing: Spacing.sm,
+          runSpacing: Spacing.sm,
+          children: types.map((t) {
+            final selected = state.authType == t;
+            return ChoiceChip(
+              avatar: Icon(icons[t], size: 16),
+              label: Text(labels[t]!, style: const TextStyle(fontSize: 12)),
+              selected: selected,
+              onSelected: (_) => notifier.setAuthType(t),
+            );
+          }).toList(),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: Spacing.lg),
         if (state.authType == 'basic') ...[
           TextField(
             controller: TextEditingController(text: state.authUsername)
-              ..selection = TextSelection.collapsed(offset: state.authUsername.length),
+              ..selection =
+                  TextSelection.collapsed(offset: state.authUsername.length),
             decoration: const InputDecoration(
               labelText: 'Username',
-              prefixIcon: Icon(Icons.person_outline),
+              prefixIcon: Icon(Icons.person_outline, size: 20),
+              border: OutlineInputBorder(),
             ),
             onChanged: notifier.setAuthUsername,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Spacing.md),
           TextField(
             controller: TextEditingController(text: state.authPassword)
-              ..selection = TextSelection.collapsed(offset: state.authPassword.length),
+              ..selection =
+                  TextSelection.collapsed(offset: state.authPassword.length),
             decoration: const InputDecoration(
               labelText: 'Password',
-              prefixIcon: Icon(Icons.lock_outline),
+              prefixIcon: Icon(Icons.lock_outline, size: 20),
+              border: OutlineInputBorder(),
             ),
             obscureText: true,
             onChanged: notifier.setAuthPassword,
@@ -72,10 +73,12 @@ class AuthEditor extends StatelessWidget {
         ] else if (state.authType == 'bearer') ...[
           TextField(
             controller: TextEditingController(text: state.authToken)
-              ..selection = TextSelection.collapsed(offset: state.authToken.length),
+              ..selection =
+                  TextSelection.collapsed(offset: state.authToken.length),
             decoration: const InputDecoration(
               labelText: 'Token',
-              prefixIcon: Icon(Icons.key),
+              prefixIcon: Icon(Icons.key, size: 20),
+              border: OutlineInputBorder(),
             ),
             maxLines: 3,
             onChanged: notifier.setAuthToken,
@@ -83,33 +86,39 @@ class AuthEditor extends StatelessWidget {
         ] else if (state.authType == 'apikey') ...[
           TextField(
             controller: TextEditingController(text: state.authKey)
-              ..selection = TextSelection.collapsed(offset: state.authKey.length),
+              ..selection =
+                  TextSelection.collapsed(offset: state.authKey.length),
             decoration: const InputDecoration(
               labelText: 'Key',
-              prefixIcon: Icon(Icons.label_outline),
+              prefixIcon: Icon(Icons.label_outline, size: 20),
+              border: OutlineInputBorder(),
             ),
             onChanged: notifier.setAuthKey,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Spacing.md),
           TextField(
             controller: TextEditingController(text: state.authValue)
-              ..selection = TextSelection.collapsed(offset: state.authValue.length),
+              ..selection =
+                  TextSelection.collapsed(offset: state.authValue.length),
             decoration: const InputDecoration(
               labelText: 'Value',
-              prefixIcon: Icon(Icons.code),
+              prefixIcon: Icon(Icons.code, size: 20),
+              border: OutlineInputBorder(),
             ),
             onChanged: notifier.setAuthValue,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: Spacing.md),
           DropdownButtonFormField<String>(
             initialValue: state.authAddTo,
             decoration: const InputDecoration(
               labelText: 'Add to',
-              prefixIcon: Icon(Icons.place),
+              prefixIcon: Icon(Icons.place, size: 20),
+              border: OutlineInputBorder(),
             ),
             items: const [
               DropdownMenuItem(value: 'header', child: Text('Header')),
-              DropdownMenuItem(value: 'query', child: Text('Query Parameters')),
+              DropdownMenuItem(
+                  value: 'query', child: Text('Query Parameters')),
             ],
             onChanged: (v) {
               if (v != null) notifier.setAuthAddTo(v);

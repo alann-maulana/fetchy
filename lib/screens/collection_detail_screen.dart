@@ -3,10 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../config/theme.dart';
+import '../config/spacing.dart';
+import '../config/typography.dart';
 import '../models/api_request.dart';
 import '../models/collection.dart';
 import '../providers/storage_provider.dart';
 import '../services/postman_service.dart';
+import '../widgets/empty_state.dart';
 
 class CollectionDetailScreen extends ConsumerStatefulWidget {
   final String collectionId;
@@ -42,8 +46,10 @@ class _CollectionDetailScreenState
   @override
   Widget build(BuildContext context) {
     final collections = ref.watch(collectionsProvider);
-    final collection = collections.where((c) => c.id == widget.collectionId).firstOrNull;
+    final collection =
+        collections.where((c) => c.id == widget.collectionId).firstOrNull;
     final theme = Theme.of(context);
+    final colors = theme.colorScheme;
 
     if (collection == null) {
       return Scaffold(
@@ -53,11 +59,10 @@ class _CollectionDetailScreenState
     }
 
     final allRequests = ref.watch(savedRequestsProvider);
-    final colRequests =
-        collection.requestIds
-            .map((id) => allRequests.where((r) => r.id == id).firstOrNull)
-            .whereType<ApiRequest>()
-            .toList();
+    final colRequests = collection.requestIds
+        .map((id) => allRequests.where((r) => r.id == id).firstOrNull)
+        .whereType<ApiRequest>()
+        .toList();
 
     if (!_isEditing) {
       _nameController.text = collection.name;
@@ -91,9 +96,30 @@ class _CollectionDetailScreenState
             PopupMenuButton<String>(
               onSelected: (v) => _handleAction(v, collection),
               itemBuilder: (_) => [
-                const PopupMenuItem(value: 'export', child: Text('Export to clipboard')),
-                const PopupMenuItem(value: 'import', child: Text('Import requests')),
-                const PopupMenuItem(value: 'delete', child: Text('Delete')),
+                const PopupMenuItem(
+                    value: 'export',
+                    child: ListTile(
+                      leading: Icon(Icons.file_upload_outlined, size: 18),
+                      title: Text('Export'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                    )),
+                const PopupMenuItem(
+                    value: 'import',
+                    child: ListTile(
+                      leading: Icon(Icons.file_download_outlined, size: 18),
+                      title: Text('Import requests'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                    )),
+                const PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(Icons.delete_outline, size: 18),
+                      title: Text('Delete'),
+                      dense: true,
+                      contentPadding: EdgeInsets.zero,
+                    )),
               ],
             ),
           ],
@@ -102,99 +128,136 @@ class _CollectionDetailScreenState
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (collection.description != null &&
-              collection.description!.isNotEmpty &&
-              !_isEditing)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-              child: Text(
-                collection.description!,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-              ),
-            ),
+          // Description
           if (_isEditing)
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(Spacing.lg),
               child: TextField(
                 controller: _descController,
                 decoration: const InputDecoration(
-                  labelText: 'Description',
+                  hintText: 'Description',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 3,
               ),
+            )
+          else if (collection.description != null &&
+              collection.description!.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, 0),
+              child: Text(
+                collection.description!,
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: colors.onSurfaceVariant),
+              ),
             ),
+
+          // Header
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            padding: EdgeInsets.fromLTRB(Spacing.lg, Spacing.lg, Spacing.lg, Spacing.sm),
             child: Row(
               children: [
-                Icon(Icons.api, size: 18, color: theme.colorScheme.primary),
-                const SizedBox(width: 8),
+                Icon(Icons.api, size: 16, color: colors.primary),
+                const SizedBox(width: Spacing.sm),
                 Text(
-                  '${colRequests.length} requests',
-                  style: theme.textTheme.titleSmall,
+                  colRequests.length == 1
+                      ? '1 request'
+                      : '${colRequests.length} requests',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: colors.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
           ),
           const Divider(height: 1),
+
+          // Request list
           Expanded(
             child: colRequests.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.api_outlined,
-                            size: 48,
-                            color: theme.colorScheme.onSurfaceVariant),
-                        const SizedBox(height: 12),
-                        Text('No requests in this collection',
-                            style: theme.textTheme.bodyMedium
-                                ?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
-                        const SizedBox(height: 16),
-                        FilledButton.tonalIcon(
-                          onPressed: () => context.push('/request'),
-                          icon: const Icon(Icons.add),
-                          label: const Text('New Request'),
-                        ),
-                      ],
+                ? EmptyState(
+                    icon: Icons.api_outlined,
+                    title: 'No requests yet',
+                    subtitle: 'Add API requests to this collection',
+                    action: FilledButton.tonalIcon(
+                      onPressed: () => context.push('/request'),
+                      icon: const Icon(Icons.add, size: 18),
+                      label: const Text('New Request'),
                     ),
                   )
                 : ListView.builder(
+                    padding: EdgeInsets.only(top: Spacing.sm, bottom: 80),
                     itemCount: colRequests.length,
                     itemBuilder: (_, i) {
                       final req = colRequests[i];
-                      final methodColor = _methodColor(req.method);
-                      return ListTile(
-                        leading: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: methodColor.withAlpha(30),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: methodColor.withAlpha(80)),
-                          ),
-                          child: Text(
-                            req.method,
-                            style: TextStyle(
-                              color: methodColor,
-                              fontWeight: FontWeight.w600,
-                              fontSize: 11,
+                      final method = req.method.toUpperCase();
+                      final mColor = method.methodColor;
+                      return Card(
+                        margin: EdgeInsets.fromLTRB(
+                            Spacing.lg, Spacing.xs, Spacing.lg, Spacing.xs),
+                        child: InkWell(
+                          onTap: () =>
+                              context.push('/request', extra: req),
+                          borderRadius:
+                              BorderRadius.circular(Spacing.cardRadius),
+                          child: Padding(
+                            padding: const EdgeInsets.all(Spacing.md),
+                            child: Row(
+                              children: [
+                                Container(
+                                  constraints: BoxConstraints(minWidth: 44),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: Spacing.sm, vertical: Spacing.xxs),
+                                  decoration: BoxDecoration(
+                                    color: mColor.withValues(alpha: 0.12),
+                                    borderRadius:
+                                        BorderRadius.circular(Spacing.chipRadius),
+                                    border: Border.all(
+                                        color: mColor.withValues(alpha: 0.25)),
+                                  ),
+                                  child: Text(
+                                    method,
+                                    style: AppTextStyles.methodBadge
+                                        .copyWith(color: mColor),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(width: Spacing.md),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(req.name,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 14)),
+                                      const SizedBox(height: Spacing.xxs),
+                                      Text(req.url,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTextStyles.codeSmall
+                                              .copyWith(
+                                                  color:
+                                                      colors.onSurfaceVariant)),
+                                    ],
+                                  ),
+                                ),
+                                IconButton(
+                                  icon: const Icon(Icons.delete_outline,
+                                      size: 18),
+                                  onPressed: () =>
+                                      _removeRequest(collection, req.id),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ],
                             ),
                           ),
                         ),
-                        title: Text(req.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                        subtitle: Text(req.url,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall
-                                ?.copyWith(fontFamily: 'monospace')),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, size: 20),
-                          onPressed: () => _removeRequest(collection, req.id),
-                        ),
-                        onTap: () => context.push('/request', extra: req),
                       );
                     },
                   ),
@@ -253,7 +316,7 @@ class _CollectionDetailScreenState
               hintText: 'Paste Postman Collection v2.1 JSON here...',
               border: OutlineInputBorder(),
             ),
-            style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            style: TextStyle(fontFamily: 'monospace', fontSize: 12),
           ),
         ),
         actions: [
@@ -315,17 +378,5 @@ class _CollectionDetailScreenState
     ref
         .read(collectionsProvider.notifier)
         .removeRequest(collection.id, requestId);
-  }
-
-  Color _methodColor(String method) {
-    return {
-      'GET': const Color(0xFF61AFFE),
-      'POST': const Color(0xFF49CC90),
-      'PUT': const Color(0xFFFCA130),
-      'PATCH': const Color(0xFF50E3C2),
-      'DELETE': const Color(0xFFF93E3E),
-      'HEAD': const Color(0xFF9012FE),
-      'OPTIONS': const Color(0xFF0D5AA7),
-    }[method] ?? Colors.grey;
   }
 }
