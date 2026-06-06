@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../screens/home_screen.dart';
 import '../screens/collections_screen.dart';
 import '../screens/environments_screen.dart';
+import '../screens/request_screen.dart';
 import '../screens/settings_screen.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -35,6 +36,10 @@ final GoRouter router = GoRouter(
           builder: (context, state) => const SettingsScreen(),
         ),
       ],
+    ),
+    GoRoute(
+      path: '/request',
+      builder: (context, state) => const RequestScreen(),
     ),
   ],
 );

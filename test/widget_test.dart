@@ -9,6 +9,7 @@ void main() {
     await tester.pumpWidget(const ProviderScope(child: FetchyApp()));
 
     // Verify that the app launches
-    expect(find.text('Home Screen - Request List'), findsOneWidget);
+    expect(find.text('No saved requests yet'), findsOneWidget);
+    expect(find.text('New Request'), findsOneWidget);
   });
 }

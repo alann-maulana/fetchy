@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -10,7 +11,12 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Requests'),
       ),
       body: const Center(
-        child: Text('Home Screen - Request List'),
+        child: Text('No saved requests yet'),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => context.push('/request'),
+        icon: const Icon(Icons.add),
+        label: const Text('New Request'),
       ),
     );
   }
