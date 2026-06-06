@@ -8,6 +8,7 @@ import '../config/typography.dart';
 import '../models/api_request.dart';
 import '../providers/request_provider.dart';
 import '../providers/storage_provider.dart';
+import '../services/curl_parser.dart';
 import '../widgets/auth_editor.dart';
 import '../widgets/body_editor.dart';
 import '../widgets/kv_editor.dart';
@@ -120,6 +121,11 @@ class _RequestScreenState extends ConsumerState<RequestScreen>
             )
           else ...[
             IconButton(
+              icon: const Icon(Icons.content_paste_go),
+              tooltip: 'Import cURL',
+              onPressed: () => _showImportCurlDialog(notifier),
+            ),
+            IconButton(
               icon: const Icon(Icons.save_outlined),
               tooltip: 'Save',
               onPressed: () => _showSaveDialog(state, notifier),
@@ -208,6 +214,82 @@ class _RequestScreenState extends ConsumerState<RequestScreen>
               response: state.response!,
               error: state.error,
             ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0),
+        ],
+      ),
+    );
+  }
+
+  void _showImportCurlDialog(RequestEditorNotifier notifier) {
+    final curlController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Import from cURL'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Paste a cURL command below to populate the request fields.',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: Spacing.md),
+              TextField(
+                controller: curlController,
+                maxLines: 8,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'curl https://api.example.com/endpoint \\\n  -H "Authorization: Bearer token" \\\n  -d \'{"key":"value"}\'',
+                  border: OutlineInputBorder(),
+                ),
+                style: AppTextStyles.code,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              final raw = curlController.text.trim();
+              if (raw.isEmpty) return;
+              final result = CurlParser.parse(raw);
+              if (result.url.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Could not parse cURL command')),
+                );
+                return;
+              }
+              final headers = result.headers.entries
+                  .map((e) => KVEntry(key: e.key, value: e.value))
+                  .toList();
+              _urlController.text = result.url;
+              notifier.setMethod(result.method);
+              notifier.setUrl(result.url);
+              notifier.setHeaders(headers);
+              notifier.setBodyType(result.body != null ? 'raw' : 'none');
+              if (result.body != null) {
+                notifier.setBodyContent(result.body!);
+              }
+              if (result.authUsername != null) {
+                notifier.setAuthType('basic');
+                notifier.setAuthUsername(result.authUsername!);
+                notifier.setAuthPassword(result.authPassword ?? '');
+              }
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('cURL imported successfully')),
+              );
+            },
+            child: const Text('Import'),
+          ),
         ],
       ),
     );
