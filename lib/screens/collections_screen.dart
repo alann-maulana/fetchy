@@ -267,18 +267,11 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
       final data = jsonDecode(jsonText) as Map<String, dynamic>;
       final result = _postmanService.importCollection(data);
       final collNotifier = ref.read(collectionsProvider.notifier);
-      collNotifier.create(result.collection.name,
+      final newCol = collNotifier.create(result.collection.name,
           description: result.collection.description);
       final requestsNotifier = ref.read(savedRequestsProvider.notifier);
       for (final req in result.requests) {
         requestsNotifier.save(req);
-      }
-      final cols = ref.read(collectionsProvider);
-      final newCol = cols.firstWhere(
-        (c) => c.name == result.collection.name,
-        orElse: () => cols.first,
-      );
-      for (final req in result.requests) {
         collNotifier.addRequest(newCol.id, req.id);
       }
       ScaffoldMessenger.of(context).showSnackBar(
