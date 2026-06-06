@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/api_request.dart';
 import '../models/api_response.dart';
+import '../models/environment.dart';
 import '../services/http_client.dart';
 import '../services/request_service.dart';
 
@@ -169,11 +170,12 @@ class RequestEditorNotifier extends StateNotifier<RequestEditorState> {
   void setAuthValue(String v) => state = state.copyWith(authValue: v, clearResponse: true);
   void setAuthAddTo(String v) => state = state.copyWith(authAddTo: v, clearResponse: true);
 
-  Map<String, dynamic> _getAuthData() {
+  Map<String, dynamic> _getAuthData([Environment? env]) {
+    String resolve(String v) => _resolveVars(v, env);
     return switch (state.authType) {
-      'basic' => {'username': state.authUsername, 'password': state.authPassword},
-      'bearer' => {'token': state.authToken},
-      'apikey' => {'key': state.authKey, 'value': state.authValue, 'addTo': state.authAddTo},
+      'basic' => {'username': resolve(state.authUsername), 'password': resolve(state.authPassword)},
+      'bearer' => {'token': resolve(state.authToken)},
+      'apikey' => {'key': resolve(state.authKey), 'value': resolve(state.authValue), 'addTo': resolve(state.authAddTo)},
       _ => {},
     };
   }
@@ -242,19 +244,43 @@ class RequestEditorNotifier extends StateNotifier<RequestEditorState> {
     // Storage save is handled by the screen via provider
   }
 
-  Future<void> sendRequest() async {
+  String _resolveVars(String input, Environment? env) {
+    if (env == null || !input.contains('{{')) return input;
+    var result = input;
+    for (final entry in env.variables.entries) {
+      result = result.replaceAll('{{${entry.key}}}', entry.value);
+    }
+    return result;
+  }
+
+  Future<void> sendRequest({Environment? activeEnv}) async {
     if (state.url.isEmpty) return;
+    final resolvedUrl = _resolveVars(state.url, activeEnv);
+    final resolvedHeaders = <String, dynamic>{};
+    for (final e in state.headers) {
+      if (e.enabled && e.key.isNotEmpty) {
+        resolvedHeaders[e.key] = _resolveVars(e.value, activeEnv);
+      }
+    }
+    final resolvedQueryParams = <String, dynamic>{};
+    for (final e in state.queryParams) {
+      if (e.enabled && e.key.isNotEmpty) {
+        resolvedQueryParams[e.key] = _resolveVars(e.value, activeEnv);
+      }
+    }
+    final resolvedBody = _resolveVars(_getBody()?.toString() ?? '', activeEnv);
+
     state = state.copyWith(isLoading: true, clearError: true, clearResponse: true);
     try {
       final response = await _requestService.executeRequest(
         method: state.method,
-        url: state.url,
-        headers: state.headersMap,
-        queryParameters: state.queryParamsMap,
-        body: _getBody(),
+        url: resolvedUrl,
+        headers: resolvedHeaders.isNotEmpty ? resolvedHeaders : null,
+        queryParameters: resolvedQueryParams.isNotEmpty ? resolvedQueryParams : null,
+        body: resolvedBody.isNotEmpty ? resolvedBody : null,
         bodyType: state.bodyType,
         authType: state.authType,
-        authData: _getAuthData(),
+        authData: _getAuthData(activeEnv),
       );
       state = state.copyWith(response: response, isLoading: false);
     } catch (e) {

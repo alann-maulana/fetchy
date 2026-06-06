@@ -127,7 +127,7 @@ class _RequestScreenState extends ConsumerState<RequestScreen>
             IconButton(
               icon: const Icon(Icons.send),
               tooltip: 'Send',
-              onPressed: () => notifier.sendRequest(),
+              onPressed: _sendRequest,
             ),
           ],
         ],
@@ -145,7 +145,7 @@ class _RequestScreenState extends ConsumerState<RequestScreen>
               _urlController.selection = TextSelection.collapsed(offset: v.length);
               notifier.setUrl(v);
             },
-            onSend: notifier.sendRequest,
+            onSend: _sendRequest,
             isLoading: state.isLoading,
           ),
           const Divider(height: 1),
@@ -211,6 +211,11 @@ class _RequestScreenState extends ConsumerState<RequestScreen>
         ],
       ),
     );
+  }
+
+  void _sendRequest() {
+    final activeEnv = ref.read(environmentsProvider.notifier).active;
+    ref.read(requestEditorProvider.notifier).sendRequest(activeEnv: activeEnv);
   }
 
   void _showSaveDialog(RequestEditorState state, RequestEditorNotifier notifier) {
