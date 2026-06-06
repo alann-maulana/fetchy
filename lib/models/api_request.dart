@@ -70,6 +70,7 @@ class ApiRequest {
   Map<String, dynamic> toJson() => _$ApiRequestToJson(this);
 
   ApiRequest copyWith({
+    String? id,
     String? name,
     String? url,
     String? method,
@@ -82,7 +83,7 @@ class ApiRequest {
     String? collectionId,
   }) {
     return ApiRequest(
-      id: id,
+      id: id ?? this.id,
       name: name ?? this.name,
       url: url ?? this.url,
       method: method ?? this.method,

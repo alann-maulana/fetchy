@@ -211,6 +211,24 @@ class _RequestScreenState extends ConsumerState<RequestScreen> {
       return;
     }
 
+    final isEditing = _loadedRequestId != null;
+    final existingRequest = isEditing
+        ? ref.read(savedRequestsProvider).where((r) => r.id == _loadedRequestId).firstOrNull
+        : null;
+
+    if (isEditing) {
+      final request = notifier.buildRequest(
+        name: existingRequest?.name ?? '${state.method} ${state.url}',
+        collectionId: existingRequest?.collectionId,
+      );
+      final requestWithId = request.copyWith(id: _loadedRequestId);
+      ref.read(savedRequestsProvider.notifier).save(requestWithId);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Updated "${existingRequest?.name ?? request.name}"')),
+      );
+      return;
+    }
+
     final allCollections = ref.read(collectionsProvider);
     final nameController = TextEditingController();
     String? selectedCollectionId;
