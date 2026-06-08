@@ -1,4 +1,4 @@
-package com.fetchy.fetchy
+package fluttr.studio.fetchy
 
 import io.flutter.embedding.android.FlutterActivity
 
