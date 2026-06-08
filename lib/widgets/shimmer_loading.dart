@@ -17,7 +17,7 @@ class RequestShimmer extends StatelessWidget {
       child: ListView.builder(
         padding: EdgeInsets.symmetric(vertical: Spacing.sm),
         itemCount: 6,
-        itemBuilder: (_, __) => Padding(
+        itemBuilder: (context, index) => Padding(
           padding: EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.xs),
           child: Container(
             height: 72,

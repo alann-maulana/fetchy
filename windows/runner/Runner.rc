@@ -90,12 +90,12 @@ BEGIN
         BLOCK "040904e4"
         BEGIN
             VALUE "CompanyName", "fluttr.studio" "\0"
-            VALUE "FileDescription", "fetchy" "\0"
+            VALUE "FileDescription", "Fetchy" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
-            VALUE "InternalName", "fetchy" "\0"
+            VALUE "InternalName", "Fetchy" "\0"
             VALUE "LegalCopyright", "Copyright (C) 2026 fluttr.studio. All rights reserved." "\0"
             VALUE "OriginalFilename", "fetchy.exe" "\0"
-            VALUE "ProductName", "fetchy" "\0"
+            VALUE "ProductName", "Fetchy" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END

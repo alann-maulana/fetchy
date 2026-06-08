@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import '../config/spacing.dart';
-import '../config/typography.dart';
 
 class EmptyState extends StatelessWidget {
   final IconData icon;

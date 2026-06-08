@@ -8,7 +8,6 @@ import '../config/typography.dart';
 import '../models/api_request.dart';
 import '../providers/storage_provider.dart';
 import '../widgets/empty_state.dart';
-import '../widgets/shimmer_loading.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
