@@ -37,7 +37,7 @@ jobs:
         run: flutter test
 
       - name: Build APK Split per ABI
-        run: flutter build apk --split-per-abi --release
+        run: flutter build apk --split-per-abi --release --split-debug-info=build/app/outputs/symbols
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
