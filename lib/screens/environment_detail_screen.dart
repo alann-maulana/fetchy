@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../config/spacing.dart';
 import '../models/environment.dart';
 import '../providers/storage_provider.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/background_blobs.dart';
 
 class EnvironmentDetailScreen extends ConsumerStatefulWidget {
   final String environmentId;
@@ -99,8 +101,9 @@ class _EnvironmentDetailScreenState
           ],
         ],
       ),
-      body: Column(
-        children: [
+      body: BackgroundBlobs(
+        child: Column(
+          children: [
           // Status banner
           Container(
             width: double.infinity,
@@ -218,6 +221,7 @@ class _EnvironmentDetailScreenState
           // Add variable section
           _buildAddSection(env, colors),
         ],
+      ),
       ),
     );
   }
@@ -363,57 +367,52 @@ class _VariableRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xxs),
-      child: Card(
+      child: GlassCard(
         margin: EdgeInsets.zero,
-        elevation: 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(Spacing.md),
-        ),
-        child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xxs),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: TextEditingController(text: keyName)
-                    ..selection =
-                        TextSelection.collapsed(offset: keyName.length),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(
-                        horizontal: Spacing.sm, vertical: Spacing.sm),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(Spacing.chipRadius)),
-                  ),
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 13),
-                  onChanged: onKeyChanged,
+        borderRadius: Spacing.md,
+        padding: EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xxs),
+        child: Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: TextEditingController(text: keyName)
+                  ..selection =
+                      TextSelection.collapsed(offset: keyName.length),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                      horizontal: Spacing.sm, vertical: Spacing.sm),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Spacing.chipRadius)),
                 ),
+                style: TextStyle(fontFamily: 'monospace', fontSize: 13),
+                onChanged: onKeyChanged,
               ),
-              const SizedBox(width: Spacing.sm),
-              Expanded(
-                child: TextField(
-                  controller: TextEditingController(text: value)
-                    ..selection =
-                        TextSelection.collapsed(offset: value.length),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.symmetric(
-                        horizontal: Spacing.sm, vertical: Spacing.sm),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(Spacing.chipRadius)),
-                  ),
-                  style: TextStyle(fontFamily: 'monospace', fontSize: 13),
-                  onChanged: onValueChanged,
+            ),
+            const SizedBox(width: Spacing.sm),
+            Expanded(
+              child: TextField(
+                controller: TextEditingController(text: value)
+                  ..selection =
+                      TextSelection.collapsed(offset: value.length),
+                decoration: InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                      horizontal: Spacing.sm, vertical: Spacing.sm),
+                  border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(Spacing.chipRadius)),
                 ),
+                style: TextStyle(fontFamily: 'monospace', fontSize: 13),
+                onChanged: onValueChanged,
               ),
-              const SizedBox(width: Spacing.xs),
-              IconButton(
-                icon: const Icon(Icons.close, size: 18),
-                onPressed: onDelete,
-                visualDensity: VisualDensity.compact,
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(width: Spacing.xs),
+            IconButton(
+              icon: const Icon(Icons.close, size: 18),
+              onPressed: onDelete,
+              visualDensity: VisualDensity.compact,
+            ),
+          ],
         ),
       ),
     );

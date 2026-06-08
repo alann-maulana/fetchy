@@ -7,6 +7,7 @@ import '../config/spacing.dart';
 import '../providers/storage_provider.dart';
 import '../services/postman_service.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/glass_card.dart';
 
 class EnvironmentsScreen extends ConsumerStatefulWidget {
   const EnvironmentsScreen({super.key});
@@ -52,133 +53,127 @@ class _EnvironmentsScreenState extends ConsumerState<EnvironmentsScreen> {
               itemCount: environments.length,
               itemBuilder: (_, i) {
                 final env = environments[i];
-                return Card(
+                return GlassCard(
                   margin: EdgeInsets.fromLTRB(
                       Spacing.lg, Spacing.xs, Spacing.lg, Spacing.xs),
-                  child: InkWell(
-                    onTap: () =>
-                        context.push('/environments/${env.id}'),
-                    borderRadius: BorderRadius.circular(Spacing.cardRadius),
-                    child: Padding(
-                      padding: const EdgeInsets.all(Spacing.lg),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: env.isActive
-                                  ? colors.primaryContainer.withValues(alpha: 0.6)
-                                  : colors.surfaceContainerHighest,
-                              borderRadius:
-                                  BorderRadius.circular(Spacing.md),
-                            ),
-                            child: Icon(
-                              env.isActive
-                                  ? Icons.check_circle
-                                  : Icons.layers_outlined,
-                              color: env.isActive
-                                  ? colors.primary
-                                  : colors.onSurfaceVariant,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: Spacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                  onTap: () =>
+                      context.push('/environments/${env.id}'),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: env.isActive
+                              ? colors.primaryContainer.withValues(alpha: 0.6)
+                              : colors.surfaceContainerHighest,
+                          borderRadius:
+                              BorderRadius.circular(Spacing.md),
+                        ),
+                        child: Icon(
+                          env.isActive
+                              ? Icons.check_circle
+                              : Icons.layers_outlined,
+                          color: env.isActive
+                              ? colors.primary
+                              : colors.onSurfaceVariant,
+                          size: 22,
+                        ),
+                      ),
+                      const SizedBox(width: Spacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
                               children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Text(
-                                        env.name,
-                                        style: const TextStyle(
-                                            fontWeight: FontWeight.w600,
-                                            fontSize: 14),
-                                        overflow: TextOverflow.ellipsis,
+                                Flexible(
+                                  child: Text(
+                                    env.name,
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 14),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (env.isActive) ...[
+                                  const SizedBox(width: Spacing.sm),
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                        horizontal: Spacing.sm,
+                                        vertical: Spacing.xxs),
+                                    decoration: BoxDecoration(
+                                      color: colors.primaryContainer,
+                                      borderRadius:
+                                          BorderRadius.circular(
+                                              Spacing.chipRadius),
+                                    ),
+                                    child: Text(
+                                      'ACTIVE',
+                                      style: TextStyle(
+                                        fontSize: 9,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 0.5,
+                                        color: colors.primary,
                                       ),
                                     ),
-                                    if (env.isActive) ...[
-                                      const SizedBox(width: Spacing.sm),
-                                      Container(
-                                        padding: EdgeInsets.symmetric(
-                                            horizontal: Spacing.sm,
-                                            vertical: Spacing.xxs),
-                                        decoration: BoxDecoration(
-                                          color: colors.primaryContainer,
-                                          borderRadius:
-                                              BorderRadius.circular(
-                                                  Spacing.chipRadius),
-                                        ),
-                                        child: Text(
-                                          'ACTIVE',
-                                          style: TextStyle(
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w700,
-                                            letterSpacing: 0.5,
-                                            color: colors.primary,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ],
-                                ),
-                                const SizedBox(height: Spacing.xxs),
-                                Text(
-                                  '${env.variables.length} variables',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                      color: colors.onSurfaceVariant),
-                                ),
+                                  ),
+                                ],
                               ],
                             ),
-                          ),
-                          PopupMenuButton<String>(
-                            itemBuilder: (_) => [
-                              if (!env.isActive)
-                                const PopupMenuItem(
-                                    value: 'activate',
-                                    child: ListTile(
-                                      leading: Icon(Icons.play_circle_outline,
-                                          size: 18),
-                                      title: Text('Activate'),
-                                      dense: true,
-                                      contentPadding: EdgeInsets.zero,
-                                    )),
-                              const PopupMenuItem(
-                                  value: 'export',
-                                  child: ListTile(
-                                    leading: Icon(Icons.file_upload_outlined,
-                                        size: 18),
-                                    title: Text('Export'),
-                                    dense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                  )),
-                              const PopupMenuItem(
-                                  value: 'delete',
-                                  child: ListTile(
-                                    leading: Icon(Icons.delete_outline,
-                                        size: 18),
-                                    title: Text('Delete'),
-                                    dense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                  )),
-                            ],
-                            onSelected: (v) {
-                              if (v == 'activate') {
-                                ref
-                                    .read(environmentsProvider.notifier)
-                                    .activate(env.id);
-                              } else if (v == 'export') {
-                                _exportEnvironment(env);
-                              } else if (v == 'delete') {
-                                _deleteEnvironment(env);
-                              }
-                            },
-                          ),
-                        ],
+                            const SizedBox(height: Spacing.xxs),
+                            Text(
+                              '${env.variables.length} variables',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                  color: colors.onSurfaceVariant),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
+                      PopupMenuButton<String>(
+                        itemBuilder: (_) => [
+                          if (!env.isActive)
+                            const PopupMenuItem(
+                                value: 'activate',
+                                child: ListTile(
+                                  leading: Icon(Icons.play_circle_outline,
+                                      size: 18),
+                                  title: Text('Activate'),
+                                  dense: true,
+                                  contentPadding: EdgeInsets.zero,
+                                )),
+                          const PopupMenuItem(
+                              value: 'export',
+                              child: ListTile(
+                                leading: Icon(Icons.file_upload_outlined,
+                                    size: 18),
+                                title: Text('Export'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              )),
+                          const PopupMenuItem(
+                              value: 'delete',
+                              child: ListTile(
+                                leading: Icon(Icons.delete_outline,
+                                    size: 18),
+                                title: Text('Delete'),
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                              )),
+                        ],
+                        onSelected: (v) {
+                          if (v == 'activate') {
+                            ref
+                                .read(environmentsProvider.notifier)
+                                .activate(env.id);
+                          } else if (v == 'export') {
+                            _exportEnvironment(env);
+                          } else if (v == 'delete') {
+                            _deleteEnvironment(env);
+                          }
+                        },
+                      ),
+                    ],
                   ),
                 );
               },
