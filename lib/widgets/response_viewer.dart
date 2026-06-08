@@ -54,7 +54,7 @@ class _ResponseViewerState extends State<ResponseViewer>
         Container(
           width: double.infinity,
           padding: EdgeInsets.fromLTRB(Spacing.lg, Spacing.md, Spacing.lg, 0),
-          color: colors.surfaceContainerLow,
+          color: Colors.transparent,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -212,7 +212,7 @@ class _ResponseViewerState extends State<ResponseViewer>
     }
 
     return Container(
-      color: colors.surfaceContainerLow,
+      color: Colors.transparent,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(Spacing.md),
         child: r.isJson

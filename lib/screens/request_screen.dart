@@ -14,6 +14,8 @@ import '../widgets/body_editor.dart';
 import '../widgets/kv_editor.dart';
 import '../widgets/response_viewer.dart';
 
+import '../widgets/background_blobs.dart';
+
 class RequestScreen extends ConsumerStatefulWidget {
   const RequestScreen({super.key});
 
@@ -74,147 +76,164 @@ class _RequestScreenState extends ConsumerState<RequestScreen>
   Widget build(BuildContext context) {
     final state = ref.watch(requestEditorProvider);
     final notifier = ref.read(requestEditorProvider.notifier);
-    final colors = Theme.of(context).colorScheme;
 
     final method = state.method;
     final mColor = method.methodColor;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xxs),
-              decoration: BoxDecoration(
-                color: mColor.withValues(alpha: 0.12),
-                borderRadius: BorderRadius.circular(Spacing.chipRadius),
-                border: Border.all(color: mColor.withValues(alpha: 0.3)),
-              ),
-              child: Text(
-                method,
-                style: AppTextStyles.methodBadge.copyWith(color: mColor),
-              ),
-            ),
-            const SizedBox(width: Spacing.sm),
-            Expanded(
-              child: Text(
-                state.url.isNotEmpty ? state.url : 'Request',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: colors.onSurface,
+    final theme = Theme.of(context);
+    final localTheme = theme.copyWith(
+      colorScheme: theme.colorScheme.copyWith(
+        primary: mColor,
+        secondary: mColor,
+      ),
+      tabBarTheme: theme.tabBarTheme.copyWith(
+        labelColor: mColor,
+        indicatorColor: mColor,
+      ),
+    );
+    final colors = localTheme.colorScheme;
+
+    return Theme(
+      data: localTheme,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xxs),
+                decoration: BoxDecoration(
+                  color: mColor.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(Spacing.chipRadius),
+                  border: Border.all(color: mColor.withValues(alpha: 0.3)),
                 ),
-                overflow: TextOverflow.ellipsis,
+                child: Text(
+                  method,
+                  style: AppTextStyles.methodBadge.copyWith(color: mColor),
+                ),
               ),
-            ),
+              const SizedBox(width: Spacing.sm),
+              Expanded(
+                child: Text(
+                  state.url.isNotEmpty ? state.url : 'Request',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: colors.onSurface,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            if (state.isLoading)
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+              )
+            else ...[
+              IconButton(
+                icon: const Icon(Icons.content_paste_go),
+                tooltip: 'Import cURL',
+                onPressed: () => _showImportCurlDialog(notifier),
+              ),
+              IconButton(
+                icon: const Icon(Icons.save_outlined),
+                tooltip: 'Save',
+                onPressed: () => _showSaveDialog(state, notifier),
+              ),
+              IconButton(
+                icon: const Icon(Icons.send),
+                tooltip: 'Send',
+                onPressed: _sendRequest,
+              ),
+            ],
           ],
         ),
-        actions: [
-          if (state.isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
+        body: BackgroundBlobs(
+          child: Column(
+          children: [
+            // URL bar
+            _UrlBar(
+              controller: _urlController,
+              method: method,
+              methodColor: mColor,
+              onMethodChanged: notifier.setMethod,
+              onUrlChanged: (v) {
+                _urlController.text = v;
+                _urlController.selection = TextSelection.collapsed(offset: v.length);
+                notifier.setUrl(v);
+              },
+              onSend: _sendRequest,
+              isLoading: state.isLoading,
+            ),
+            const Divider(height: 1),
+  
+            // Tabs
+            Container(
+              color: Colors.transparent,
+              child: TabBar(
+                controller: _tabController,
+                labelColor: colors.primary,
+                unselectedLabelColor: colors.onSurfaceVariant,
+                indicatorColor: colors.primary,
+                indicatorWeight: 2,
+                labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                unselectedLabelStyle: const TextStyle(fontSize: 13),
+                tabs: const [
+                  Tab(text: 'Params', icon: Icon(Icons.merge_type, size: 16)),
+                  Tab(text: 'Headers', icon: Icon(Icons.list, size: 16)),
+                  Tab(text: 'Body', icon: Icon(Icons.description_outlined, size: 16)),
+                  Tab(text: 'Auth', icon: Icon(Icons.lock_outline, size: 16)),
+                ],
               ),
-            )
-          else ...[
-            IconButton(
-              icon: const Icon(Icons.content_paste_go),
-              tooltip: 'Import cURL',
-              onPressed: () => _showImportCurlDialog(notifier),
             ),
-            IconButton(
-              icon: const Icon(Icons.save_outlined),
-              tooltip: 'Save',
-              onPressed: () => _showSaveDialog(state, notifier),
+  
+            // Tab content
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    child: KVEditor(
+                      entries: state.queryParams,
+                      onChanged: notifier.setQueryParams,
+                      keyHint: 'Query param',
+                      valueHint: 'Value',
+                    ),
+                  ),
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    child: KVEditor(
+                      entries: state.headers,
+                      onChanged: notifier.setHeaders,
+                      keyHint: 'Header name',
+                      valueHint: 'Header value',
+                    ),
+                  ),
+                  BodyEditor(state: state, notifier: notifier),
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(Spacing.md),
+                    child: AuthEditor(state: state, notifier: notifier),
+                  ),
+                ],
+              ),
             ),
-            IconButton(
-              icon: const Icon(Icons.send),
-              tooltip: 'Send',
-              onPressed: _sendRequest,
-            ),
+  
+            // Response
+            if (state.response != null)
+              ResponseViewer(
+                response: state.response!,
+                error: state.error,
+              ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0),
           ],
-        ],
-      ),
-      body: Column(
-        children: [
-          // URL bar
-          _UrlBar(
-            controller: _urlController,
-            method: method,
-            methodColor: mColor,
-            onMethodChanged: notifier.setMethod,
-            onUrlChanged: (v) {
-              _urlController.text = v;
-              _urlController.selection = TextSelection.collapsed(offset: v.length);
-              notifier.setUrl(v);
-            },
-            onSend: _sendRequest,
-            isLoading: state.isLoading,
-          ),
-          const Divider(height: 1),
-
-          // Tabs
-          Container(
-            color: colors.surfaceContainerLow,
-            child: TabBar(
-              controller: _tabController,
-              labelColor: colors.primary,
-              unselectedLabelColor: colors.onSurfaceVariant,
-              indicatorColor: colors.primary,
-              indicatorWeight: 2,
-              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              unselectedLabelStyle: const TextStyle(fontSize: 13),
-              tabs: const [
-                Tab(text: 'Params', icon: Icon(Icons.merge_type, size: 16)),
-                Tab(text: 'Headers', icon: Icon(Icons.list, size: 16)),
-                Tab(text: 'Body', icon: Icon(Icons.description_outlined, size: 16)),
-                Tab(text: 'Auth', icon: Icon(Icons.lock_outline, size: 16)),
-              ],
-            ),
-          ),
-
-          // Tab content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  child: KVEditor(
-                    entries: state.queryParams,
-                    onChanged: notifier.setQueryParams,
-                    keyHint: 'Query param',
-                    valueHint: 'Value',
-                  ),
-                ),
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  child: KVEditor(
-                    entries: state.headers,
-                    onChanged: notifier.setHeaders,
-                    keyHint: 'Header name',
-                    valueHint: 'Header value',
-                  ),
-                ),
-                BodyEditor(state: state, notifier: notifier),
-                SingleChildScrollView(
-                  padding: const EdgeInsets.all(Spacing.md),
-                  child: AuthEditor(state: state, notifier: notifier),
-                ),
-              ],
-            ),
-          ),
-
-          // Response
-          if (state.response != null)
-            ResponseViewer(
-              response: state.response!,
-              error: state.error,
-            ).animate().fadeIn(duration: 300.ms).slideY(begin: 0.05, end: 0),
-        ],
+        ),
+        ),
       ),
     );
   }
