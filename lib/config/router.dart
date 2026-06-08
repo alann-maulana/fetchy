@@ -8,6 +8,8 @@ import '../screens/environment_detail_screen.dart';
 import '../screens/request_screen.dart';
 import '../screens/settings_screen.dart';
 
+import '../widgets/background_blobs.dart';
+
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
 
@@ -70,7 +72,7 @@ class ScaffoldWithNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: child,
+      body: BackgroundBlobs(child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _calculateSelectedIndex(context),
         onDestinationSelected: (index) => _onItemTapped(index, context),
