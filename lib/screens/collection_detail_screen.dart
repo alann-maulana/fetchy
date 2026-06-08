@@ -11,6 +11,8 @@ import '../models/collection.dart';
 import '../providers/storage_provider.dart';
 import '../services/postman_service.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/glass_card.dart';
+import '../widgets/background_blobs.dart';
 
 class CollectionDetailScreen extends ConsumerStatefulWidget {
   final String collectionId;
@@ -125,9 +127,10 @@ class _CollectionDetailScreenState
           ],
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      body: BackgroundBlobs(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Description
           if (_isEditing)
             Padding(
@@ -194,75 +197,70 @@ class _CollectionDetailScreenState
                       final req = colRequests[i];
                       final method = req.method.toUpperCase();
                       final mColor = method.methodColor;
-                      return Card(
+                      return GlassCard(
                         margin: EdgeInsets.fromLTRB(
                             Spacing.lg, Spacing.xs, Spacing.lg, Spacing.xs),
-                        child: InkWell(
-                          onTap: () =>
-                              context.push('/request', extra: req),
-                          borderRadius:
-                              BorderRadius.circular(Spacing.cardRadius),
-                          child: Padding(
-                            padding: const EdgeInsets.all(Spacing.md),
-                            child: Row(
-                              children: [
-                                Container(
-                                  constraints: BoxConstraints(minWidth: 44),
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: Spacing.sm, vertical: Spacing.xxs),
-                                  decoration: BoxDecoration(
-                                    color: mColor.withValues(alpha: 0.12),
-                                    borderRadius:
-                                        BorderRadius.circular(Spacing.chipRadius),
-                                    border: Border.all(
-                                        color: mColor.withValues(alpha: 0.25)),
-                                  ),
-                                  child: Text(
-                                    method,
-                                    style: AppTextStyles.methodBadge
-                                        .copyWith(color: mColor),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ),
-                                const SizedBox(width: Spacing.md),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(req.name,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: const TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 14)),
-                                      const SizedBox(height: Spacing.xxs),
-                                      Text(req.url,
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                          style: AppTextStyles.codeSmall
-                                              .copyWith(
-                                                  color:
-                                                      colors.onSurfaceVariant)),
-                                    ],
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline,
-                                      size: 18),
-                                  onPressed: () =>
-                                      _removeRequest(collection, req.id),
-                                  visualDensity: VisualDensity.compact,
-                                ),
-                              ],
+                        onTap: () =>
+                            context.push('/request', extra: req),
+                        padding: const EdgeInsets.all(Spacing.md),
+                        child: Row(
+                          children: [
+                            Container(
+                              constraints: BoxConstraints(minWidth: 44),
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: Spacing.sm, vertical: Spacing.xxs),
+                              decoration: BoxDecoration(
+                                color: mColor.withValues(alpha: 0.12),
+                                borderRadius:
+                                    BorderRadius.circular(Spacing.chipRadius),
+                                border: Border.all(
+                                    color: mColor.withValues(alpha: 0.25)),
+                              ),
+                              child: Text(
+                                method,
+                                style: AppTextStyles.methodBadge
+                                    .copyWith(color: mColor),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: Spacing.md),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                children: [
+                                  Text(req.name,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14)),
+                                  const SizedBox(height: Spacing.xxs),
+                                  Text(req.url,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTextStyles.codeSmall
+                                          .copyWith(
+                                              color:
+                                                  colors.onSurfaceVariant)),
+                                ],
+                              ),
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  size: 18),
+                              onPressed: () =>
+                                  _removeRequest(collection, req.id),
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ],
                         ),
                       );
                     },
                   ),
           ),
         ],
+      ),
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push('/request'),

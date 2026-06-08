@@ -6,6 +6,7 @@ import '../config/spacing.dart';
 import '../providers/storage_provider.dart';
 import '../services/postman_service.dart';
 import '../widgets/empty_state.dart';
+import '../widgets/glass_card.dart';
 
 class CollectionsScreen extends ConsumerStatefulWidget {
   const CollectionsScreen({super.key});
@@ -54,68 +55,62 @@ class _CollectionsScreenState extends ConsumerState<CollectionsScreen> {
                 final reqCount =
                     col.requestIds.where((id) => allRequests.any((r) => r.id == id)).length;
 
-                return Card(
+                return GlassCard(
                   margin: EdgeInsets.fromLTRB(Spacing.lg, Spacing.xs, Spacing.lg, Spacing.xs),
-                  child: InkWell(
-                    onTap: () => context.push('/collections/${col.id}'),
-                    borderRadius: BorderRadius.circular(Spacing.cardRadius),
-                    child: Padding(
-                      padding: const EdgeInsets.all(Spacing.lg),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
-                              color: colors.primaryContainer.withValues(alpha: 0.6),
-                              borderRadius: BorderRadius.circular(Spacing.md),
-                            ),
-                            child: Icon(
-                              Icons.folder,
-                              color: colors.primary,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: Spacing.md),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(col.name,
-                                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                                const SizedBox(height: Spacing.xxs),
-                                Text(
-                                  reqCount == 1 ? '1 request' : '$reqCount requests',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                    color: colors.onSurfaceVariant,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          PopupMenuButton<String>(
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(value: 'rename', child: ListTile(
-                                leading: Icon(Icons.edit_outlined, size: 18),
-                                title: Text('Rename'),
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
-                              )),
-                              const PopupMenuItem(value: 'delete', child: ListTile(
-                                leading: Icon(Icons.delete_outline, size: 18),
-                                title: Text('Delete'),
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
-                              )),
-                            ],
-                            onSelected: (v) {
-                              if (v == 'rename') _renameCollection(col);
-                              if (v == 'delete') _deleteCollection(col);
-                            },
-                          ),
-                        ],
+                  onTap: () => context.push('/collections/${col.id}'),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: colors.primaryContainer.withValues(alpha: 0.6),
+                          borderRadius: BorderRadius.circular(Spacing.md),
+                        ),
+                        child: Icon(
+                          Icons.folder,
+                          color: colors.primary,
+                          size: 22,
+                        ),
                       ),
-                    ),
+                      const SizedBox(width: Spacing.md),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(col.name,
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                            const SizedBox(height: Spacing.xxs),
+                            Text(
+                              reqCount == 1 ? '1 request' : '$reqCount requests',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: colors.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      PopupMenuButton<String>(
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(value: 'rename', child: ListTile(
+                            leading: Icon(Icons.edit_outlined, size: 18),
+                            title: Text('Rename'),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                          )),
+                          const PopupMenuItem(value: 'delete', child: ListTile(
+                            leading: Icon(Icons.delete_outline, size: 18),
+                            title: Text('Delete'),
+                            dense: true,
+                            contentPadding: EdgeInsets.zero,
+                          )),
+                        ],
+                        onSelected: (v) {
+                          if (v == 'rename') _renameCollection(col);
+                          if (v == 'delete') _deleteCollection(col);
+                        },
+                      ),
+                    ],
                   ),
                 );
               },
