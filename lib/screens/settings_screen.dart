@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/theme.dart';
 import '../config/spacing.dart';
+import '../widgets/glass_card.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -33,47 +34,44 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
-          Card(
+          GlassCard(
             margin: EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.xs),
-            child: Padding(
-              padding: const EdgeInsets.all(Spacing.lg),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Theme',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                      color: colors.onSurface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Theme',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14,
+                    color: colors.onSurface,
+                  ),
+                ),
+                const SizedBox(height: Spacing.md),
+                SegmentedButton<ThemeMode>(
+                  segments: const [
+                    ButtonSegment(
+                      value: ThemeMode.system,
+                      label: Text('System'),
+                      icon: Icon(Icons.brightness_auto, size: 18),
                     ),
-                  ),
-                  const SizedBox(height: Spacing.md),
-                  SegmentedButton<ThemeMode>(
-                    segments: const [
-                      ButtonSegment(
-                        value: ThemeMode.system,
-                        label: Text('System'),
-                        icon: Icon(Icons.brightness_auto, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: ThemeMode.light,
-                        label: Text('Light'),
-                        icon: Icon(Icons.light_mode, size: 18),
-                      ),
-                      ButtonSegment(
-                        value: ThemeMode.dark,
-                        label: Text('Dark'),
-                        icon: Icon(Icons.dark_mode, size: 18),
-                      ),
-                    ],
-                    selected: {themeMode},
-                    onSelectionChanged: (v) {
-                      ref.read(themeModeProvider.notifier).state = v.first;
-                    },
-                  ),
-                ],
-              ),
+                    ButtonSegment(
+                      value: ThemeMode.light,
+                      label: Text('Light'),
+                      icon: Icon(Icons.light_mode, size: 18),
+                    ),
+                    ButtonSegment(
+                      value: ThemeMode.dark,
+                      label: Text('Dark'),
+                      icon: Icon(Icons.dark_mode, size: 18),
+                    ),
+                  ],
+                  selected: {themeMode},
+                  onSelectionChanged: (v) {
+                    ref.read(themeModeProvider.notifier).state = v.first;
+                  },
+                ),
+              ],
             ),
           ),
 
@@ -92,8 +90,9 @@ class SettingsScreen extends ConsumerWidget {
               ),
             ),
           ),
-          Card(
+          GlassCard(
             margin: EdgeInsets.symmetric(horizontal: Spacing.lg, vertical: Spacing.xs),
+            padding: EdgeInsets.zero,
             child: Column(
               children: [
                 ListTile(
