@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../config/theme.dart';
 import '../config/spacing.dart';
 import '../widgets/glass_card.dart';
+
+final packageInfoProvider = FutureProvider<PackageInfo>((ref) async {
+  return PackageInfo.fromPlatform();
+});
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -10,6 +15,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
+    final packageInfoAsync = ref.watch(packageInfoProvider);
     final colors = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -112,9 +118,15 @@ class SettingsScreen extends ConsumerWidget {
                   subtitle: const Text('Mobile REST API Client'),
                 ),
                 Divider(height: 1, indent: Spacing.lg + 52),
-                const ListTile(
-                  title: Text('Version', style: TextStyle(fontSize: 14)),
-                  subtitle: Text('1.0.0'),
+                ListTile(
+                  title: const Text('Version', style: TextStyle(fontSize: 14)),
+                  subtitle: Text(
+                    packageInfoAsync.when(
+                      data: (info) => '${info.version}+${info.buildNumber}',
+                      loading: () => '...',
+                      error: (err, stack) => 'Unknown',
+                    ),
+                  ),
                 ),
               ],
             ),
