@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import '../widgets/glass_card.dart';
 import '../config/theme.dart';
 import '../config/spacing.dart';
 import '../config/typography.dart';
@@ -133,76 +134,69 @@ class _RequestCard extends StatelessWidget {
     final method = request.method.toUpperCase();
     final mColor = method.methodColor;
 
-    return Card(
+    return GlassCard(
       margin: EdgeInsets.fromLTRB(Spacing.lg, Spacing.xs, Spacing.lg, Spacing.xs),
-      surfaceTintColor: mColor.withValues(alpha: 0.05),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(Spacing.cardRadius),
-        child: Padding(
-          padding: const EdgeInsets.all(Spacing.lg),
-          child: Row(
-            children: [
-              // Method badge
-              Container(
-                constraints: BoxConstraints(minWidth: 48),
-                padding: EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
-                decoration: BoxDecoration(
-                  color: mColor.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(Spacing.chipRadius),
-                  border: Border.all(color: mColor.withValues(alpha: 0.25)),
-                ),
-                child: Text(
-                  method,
-                  style: AppTextStyles.methodBadge.copyWith(color: mColor),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-              const SizedBox(width: Spacing.md),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      request.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                    ),
-                    const SizedBox(height: Spacing.xs),
-                    Text(
-                      request.url,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTextStyles.codeSmall.copyWith(color: colors.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: Spacing.sm),
-              PopupMenuButton<String>(
-                itemBuilder: (_) => [
-                  const PopupMenuItem(value: 'rename', child: ListTile(
-                    leading: Icon(Icons.edit_outlined, size: 18),
-                    title: Text('Rename'),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                  const PopupMenuItem(value: 'delete', child: ListTile(
-                    leading: Icon(Icons.delete_outline, size: 18),
-                    title: Text('Delete'),
-                    dense: true,
-                    contentPadding: EdgeInsets.zero,
-                  )),
-                ],
-                onSelected: (v) {
-                  if (v == 'rename') onRename();
-                  if (v == 'delete') onDelete();
-                },
-              ),
-            ],
+      onTap: onTap,
+      child: Row(
+        children: [
+          // Method badge
+          Container(
+            constraints: BoxConstraints(minWidth: 48),
+            padding: EdgeInsets.symmetric(horizontal: Spacing.sm, vertical: Spacing.xs),
+            decoration: BoxDecoration(
+              color: mColor.withValues(alpha: 0.12),
+              borderRadius: BorderRadius.circular(Spacing.chipRadius),
+              border: Border.all(color: mColor.withValues(alpha: 0.25)),
+            ),
+            child: Text(
+              method,
+              style: AppTextStyles.methodBadge.copyWith(color: mColor),
+              textAlign: TextAlign.center,
+            ),
           ),
-        ),
+          const SizedBox(width: Spacing.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  request.name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                ),
+                const SizedBox(height: Spacing.xs),
+                Text(
+                  request.url,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTextStyles.codeSmall.copyWith(color: colors.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Spacing.sm),
+          PopupMenuButton<String>(
+            itemBuilder: (_) => [
+              const PopupMenuItem(value: 'rename', child: ListTile(
+                leading: Icon(Icons.edit_outlined, size: 18),
+                title: Text('Rename'),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              )),
+              const PopupMenuItem(value: 'delete', child: ListTile(
+                leading: Icon(Icons.delete_outline, size: 18),
+                title: Text('Delete'),
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+              )),
+            ],
+            onSelected: (v) {
+              if (v == 'rename') onRename();
+              if (v == 'delete') onDelete();
+            },
+          ),
+        ],
       ),
     ).animate().fadeIn(
       duration: 350.ms,
